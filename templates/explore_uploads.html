@@ -1,0 +1,41 @@
+{% extends "header.html" %}
+{% block content %}
+     <h2>{{ header }}</h2>
+     <p><a href="{{ url_for('explorer') }}">OpenFOAM cases area</a>
+        (Browse cases, recently simulated on the server.) </p>
+     <table class="dirlist">
+       <tr>
+          <th>Path</th>
+          <th>Size on disk</th>
+          <th>Modification time</th>
+       </tr>
+       {% if parent %}
+       <tr>
+           <td class="directory">
+           <a href="javascript:history.back()">..</a>
+           </td>
+           <td />
+           <td />
+           <td class="directory">
+	       <a href="{{ url_for('explorer') }}">Top</a>
+           </td>
+       </tr>
+       {% endif %}
+
+       {% for item in file_info_list %}
+       <tr>
+          <td class="file"> {{item.name}} </td>
+          <td> {{ item.file_size }} </td>
+          <td> {{ item.mtime_str() }} </td>
+	      <td>{% if item.file_type == '.zip' %}
+                <a class="download" href="{{ url_for('download_upload', case_path=item.path) }}?dl={{ item.name }}.zip" download="{{item.name}}.zip">download</a>
+              {% else %}
+                <a href="{{ url_for('explorer', case_path=item.path) }}">view</a>
+              {% endif %}
+          </td>
+       </tr>
+       {% endfor %}
+     </table>
+     <hr />
+     <p><a href="{{ url_for('cleanup_folders') }}">Remove cases</a> that are older than 48 hours.</p>
+{% endblock %}
