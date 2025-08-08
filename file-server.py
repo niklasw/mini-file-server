@@ -33,21 +33,23 @@ import sys
 import getpass
 from random import randint
 
-if not os.getenv('CFD_HOME'):
-    print('Error: CFD_HOME variable must be set to the files target directpory')
+if not os.getenv('MINI_FS_ROOT'):
+    print('Error: MINI_FS_ROOT variable must be set to the files target directpory')
     sys.exit(1)
 
-app = Flask(__name__)
-uploads = os.getenv('CFD_UPLOAD_FOLDER') or (os.getenv('CFD_HOME') + '/uploads')
+files = Path(os.getenv('MINI_FS_ROOT'))
+uploads = os.getenv('MINI_FS_UPLOAD_ROOT') or  files / 'uploads')
 uploads = Path(uploads)
 print('Uploads directory: ', uploads)
 
 if not (uploads and uploads.is_dir()):
-    print('Error: CFD_UPLOAD_FOLDER or CFD_HOME not set to a directory', flush=True)
+    print('Error: MINI_FS_UPLOAD_ROOT or MINI_FS_ROOT not set to a directory', flush=True)
     sys.exit(1)
 
-app.config['CFD_UPLOAD_FOLDER'] = Path(uploads)
-app.config['CFD_UPLOAD_FOLDER'].mkdir(parents=True, exist_ok=True)
+
+app = Flask(__name__)
+app.config['MINI_FS_UPLOAD_ROOT'] = uploads
+app.config['MINI_FS_ROOT'] = files
 app.wsgi_app = ProxyFix(app.wsgi_app, x_host=1, x_prefix=1)
 
 
@@ -56,7 +58,7 @@ def test():
     return {"test": True}
 
 
-@app.get('/upload')
+@app.get('/upload/')
 def upload():
     arg = request.args.get('message')
     message = 'Upload file from local drive'
@@ -79,7 +81,7 @@ def safe_path(root: Path, path: Path):
 @app.get('/explore/')
 @app.get('/explore/<path:case_path>')
 def explorer(case_path=None):
-    root_path = Path(os.getenv('CFD_HOME'))
+    root_path = Path(os.getenv('MINI_FS_ROOT'))
     case_path = Path(case_path) if case_path else Path('.')
     if not safe_path(root_path, case_path):
         abort(404)
@@ -98,18 +100,6 @@ def explorer(case_path=None):
                            parent=case_path.parent,
                            dir_info_list=content.get('dirs'),
                            file_info_list=content.get('files'))
-
-@app.route('/uploads/')
-def uploads():
-    root_path = app.config['CFD_UPLOAD_FOLDER']
-    content = list_directory(root_path, '.')
-    files = content.get('files')
-    files.sort(key=lambda t: t.mtime, reverse=True)
-    return render_template('explore_uploads.html',
-                           header='Transferred files (Zip format)',
-                           parent=None,
-                           dir_info_list=[],
-                           file_info_list=files)
 
 
 def download_base(root_path, case_path):
@@ -137,7 +127,7 @@ def download_base(root_path, case_path):
 
 @app.route('/download/<path:case_path>')
 def download(case_path):
-    root_path = Path(os.getenv('CFD_HOME'))
+    root_path = Path(os.getenv('MINI_FS_ROOT'))
     case_path = Path(case_path)
     ret = download_base(root_path, case_path)
     return ret or abort(404)
@@ -147,7 +137,7 @@ def download(case_path):
 @app.get('/rw/<path:file_name>')
 def file_transfer(file_name=None):
     """Post or get file using Flask methods"""
-    target_folder = app.config['CFD_UPLOAD_FOLDER']
+    target_folder = app.config['MINI_FS_UPLOAD_ROOT']
 
     if request.method == 'POST':
         file_object = request.files.get('file')
@@ -175,7 +165,7 @@ def file_transfer(file_name=None):
 
 
 def get_uploads(file_name=None):
-    target_folder = app.config['CFD_UPLOAD_FOLDER']
+    target_folder = app.config['MINI_FS_UPLOAD_ROOT']
     if target_folder.is_dir():
         content = list_directory_as_dicts(target_folder, Path('.'))
         if file_name:
@@ -197,8 +187,8 @@ def ls_uploads(file_name):
 
 @app.route('/cleanup_folders')
 def cleanup_folders(redirect=True):
-    remove_old_folders(Path(os.getenv('CFD_HOME')), hours=2*24)
-    remove_old_files(Path(app.config['CFD_UPLOAD_FOLDER']), hours=2*24)
+    remove_old_folders(Path(os.getenv('MINI_FS_ROOT')), hours=2*24)
+    remove_old_files(Path(app.config['MINI_FS_UPLOAD_ROOT']), hours=2*24)
     if redirect:
         return redirect(url_for('explorer'))
 
