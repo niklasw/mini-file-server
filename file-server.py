@@ -39,9 +39,10 @@ if not os.getenv('CFD_HOME'):
 
 app = Flask(__name__)
 uploads = os.getenv('CFD_UPLOAD_FOLDER') or (os.getenv('CFD_HOME') + '/uploads')
-print(uploads)
+uploads = Path(uploads)
+print('Uploads directory: ', uploads)
 
-if not (uploads and Path(uploads).is_dir()):
+if not (uploads and uploads.is_dir()):
     print('Error: CFD_UPLOAD_FOLDER or CFD_HOME not set to a directory', flush=True)
     sys.exit(1)
 
