@@ -38,7 +38,7 @@ if not os.getenv('MINI_FS_ROOT'):
     sys.exit(1)
 
 files = Path(os.getenv('MINI_FS_ROOT'))
-uploads = os.getenv('MINI_FS_UPLOAD_ROOT') or  files / 'uploads')
+uploads = os.getenv('MINI_FS_UPLOAD_ROOT') or  files / 'uploads'
 uploads = Path(uploads)
 print('Uploads directory: ', uploads)
 
