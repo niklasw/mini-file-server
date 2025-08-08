@@ -33,6 +33,9 @@ import sys
 import getpass
 from random import randint
 
+if not os.getenv('CFD_HOME'):
+    print('Error: CFD_HOME variable must be set to the files target directpory')
+    sys.exit(1)
 
 app = Flask(__name__)
 uploads = os.getenv('CFD_UPLOAD_FOLDER') or (os.getenv('CFD_HOME') + '/uploads')
@@ -132,8 +135,8 @@ def download_base(root_path, case_path):
 
 
 @app.route('/download/<path:case_path>')
-def download(case_path, root='CFD_HOME'):
-    root_path = Path(os.getenv(root))
+def download(case_path):
+    root_path = Path(os.getenv('CFD_HOME'))
     case_path = Path(case_path)
     ret = download_base(root_path, case_path)
     return ret or abort(404)
